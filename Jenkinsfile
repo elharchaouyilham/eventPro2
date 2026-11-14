@@ -1,6 +1,11 @@
 
 pipeline {
     agent any
+    environment {
+        DB_URL = 'jdbc:postgresql://host.docker.internal:5432/eventpro_db'
+        DB_USERNAME = 'postgres'
+        DB_PASSWORD = '0000'
+    }
 
     stages {
 
