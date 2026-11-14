@@ -1,10 +1,15 @@
 
 pipeline {
     agent any
+
+    options {
+        skipDefaultCheckout(true)
+    }
+
     environment {
         DB_URL = 'jdbc:postgresql://host.docker.internal:5432/eventpro_db'
         DB_USERNAME = 'postgres'
-        DB_PASSWORD = '0000'
+        DB_PASSWORD = credentials('eventpro-db-password')
     }
 
     stages {
@@ -41,19 +46,30 @@ pipeline {
                 sh './mvnw -B jacoco:report'
             }
         }
+
+        // 5. Generation du fichier WAR
+        stage('Package') {
+            steps {
+                echo 'Generation du fichier WAR...'
+                sh './mvnw -B -DskipTests package'
+            }
+        }
     }
 
     post {
         always {
             echo 'Publication des resultats...'
 
+            // Publication des resultats des tests
             junit allowEmptyResults: true,
                   testResults: '**/target/surefire-reports/*.xml'
 
-            archiveArtifacts artifacts: '**/target/*.war',
-                             allowEmptyArchive: true
+            // Archivage du fichier WAR
+            archiveArtifacts artifacts: 'target/*.war',
+                             fingerprint: true
 
-            archiveArtifacts artifacts: '**/target/site/jacoco/**',
+            // Archivage du rapport JaCoCo
+            archiveArtifacts artifacts: 'target/site/jacoco/**',
                              allowEmptyArchive: true
         }
 
